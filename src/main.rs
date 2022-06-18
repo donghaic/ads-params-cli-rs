@@ -5,6 +5,7 @@ use std::io::{prelude::*, BufReader};
 use anyhow::{anyhow, Ok, Result};
 use clap::{ArgEnum, Parser, Subcommand};
 use redis::Commands;
+use url::Url;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -13,20 +14,28 @@ struct Cli {
     command: Command,
 
     /// Redis address.
-    #[clap(long,default_value_t = String::from("127.0.0.1:6379"))]
+    #[clap(long, default_value_t = String::from("127.0.0.1:6379"))]
     redis_addr: String,
 
     /// Redis password.
-    #[clap(long,default_value_t = String::from(""))]
+    #[clap(long, default_value_t = String::from(""))]
     redis_pwd: String,
 
     /// Target filename to be loaded.
-    #[clap(long, short)]
+    #[clap(long, short, forbid_empty_values = true)]
     file: String,
 
     /// feishu url
-    #[clap(long)]
+    #[clap(long, validator = validate_url)]
     feishu_url: Option<String>,
+}
+
+
+fn validate_url(url: &str) -> std::result::Result<(), String> {
+    match Url::parse(url) {
+        std::result::Result::Ok(url) => std::result::Result::Ok(()),
+        std::result::Result::Err(_) => std::result::Result::Err("bad url".into()),
+    }
 }
 
 #[derive(Subcommand, Debug)]
@@ -80,6 +89,7 @@ const REDIS_CFG_KEY_EXP_EXP_AB_PARAMS: &str = "cfg:exp:ab";
 const REDIS_KEY_EXP_ADID_DEFALUT_CHOICE: &str = "exp:default:adid:choices";
 const REDIS_CFG_KEY_EXP_TARGET_CTR_ACTION: &str = "cfg:exp:action:targetctr:default";
 const REDIS_CFG_KEY_EXP_VERSION_AD_ID_SCORES: &str = "expversion:score:default";
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
